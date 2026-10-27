@@ -61,7 +61,9 @@ jobs:
         run: |
           java -version
           gradle --version
-          sdkmanager --list | head -n 40
+          echo "Android SDK root: ${ANDROID_HOME:-not-set}"
+          test -d "${ANDROID_HOME}/platforms/android-35"
+          test -d "${ANDROID_HOME}/build-tools/34.0.0"
 
       - name: Build debug APK
         run: gradle --no-daemon --stacktrace --warning-mode all assembleDebug
