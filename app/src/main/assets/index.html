@@ -239,7 +239,12 @@ function makeSnake(x,y,angle,color,name,isPlayer){
 }
 function placeFood(x,y){
  const c=botColors[Math.floor(Math.random()*botColors.length)].main;
- foods.push({x:x===undefined?random(-WORLD_RADIUS+70,WORLD_RADIUS-70):x,y:y===undefined?random(-WORLD_RADIUS+70,WORLD_RADIUS-70):y,r:random(3.2,5.3),value:Math.random()<.12?3:1,color:c,phase:random(0,TAU)});
+ if(x===undefined||y===undefined){
+  const a=random(0,TAU),r=Math.sqrt(Math.random())*(WORLD_RADIUS-95);
+  if(x===undefined)x=Math.cos(a)*r;
+  if(y===undefined)y=Math.sin(a)*r;
+ }
+ foods.push({x,y,r:random(3.2,5.3),value:Math.random()<.12?3:1,color:c,phase:random(0,TAU)});
 }
 function dropFood(x,y,count){
  for(let i=0;i<count;i++){
@@ -343,7 +348,7 @@ function stepSnake(s,dt,isPlayer){
  let speed=s.baseSpeed;
  if(s.boost){
   speed*=1.6;s.boostClock+=dt;
-  if(s.boostClock>.17){s.boostClock=0;s.length=Math.max(7,s.length-0.035);if(isPlayer)score=Math.max(0,score-0.015)}
+  if(s.boostClock>.17){s.boostClock=0;s.length=Math.max(7,s.length-0.035)}
  }else{s.boostClock=0}
  const oldX=s.x,oldY=s.y;
  s.x+=Math.cos(s.angle)*speed*dt;s.y+=Math.sin(s.angle)*speed*dt;
@@ -391,8 +396,10 @@ function killBot(b){
 }
 function respawnBot(b){
  const a=random(0,TAU),r=random(450,1150);
- b.x=clamp(player.x+Math.cos(a)*r,-WORLD_RADIUS+180,WORLD_RADIUS-180);
- b.y=clamp(player.y+Math.sin(a)*r,-WORLD_RADIUS+180,WORLD_RADIUS-180);
+ let x=player.x+Math.cos(a)*r,y=player.y+Math.sin(a)*r;
+ const edge=Math.hypot(x,y),limit=WORLD_RADIUS-260;
+ if(edge>limit){x=x/edge*limit;y=y/edge*limit}
+ b.x=x;b.y=y;
  b.angle=random(0,TAU);b.targetAngle=b.angle;b.length=Math.floor(random(9,14));b.dead=false;b.baseSpeed=random(106,130);b.trail=[];
  for(let i=0;i<b.length*4+65;i++)b.trail.push({x:b.x-Math.cos(b.angle)*i*TRAIL_STEP,y:b.y-Math.sin(b.angle)*i*TRAIL_STEP});
 }
