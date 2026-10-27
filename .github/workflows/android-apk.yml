@@ -31,6 +31,25 @@ jobs:
       - name: Install Android SDK platform and build tools
         run: sdkmanager "platforms;android-35" "build-tools;34.0.0" "platform-tools"
 
+      - name: Set up Node.js for game validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate game JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          html = Path("app/src/main/assets/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.DOTALL)
+          if len(scripts) != 1:
+              raise SystemExit(f"Expected one inline game script, found {len(scripts)}")
+          Path("/tmp/snake-arena-game.js").write_text(scripts[0], encoding="utf-8")
+          PY
+          node --check /tmp/snake-arena-game.js
+
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
