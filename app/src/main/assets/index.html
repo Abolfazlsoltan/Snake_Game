@@ -274,7 +274,6 @@ function placeFood(x,y){
 }
 function dropFood(x,y,count){
  for(let i=0;i<count;i++){
-  const trailPoint=player&&Math.random()<0 ? player.trail[0] : null;
   const a=random(0,TAU),rad=random(5,32);
   const tx=x+Math.cos(a)*rad,ty=y+Math.sin(a)*rad;
   placeFood(clamp(tx,-WORLD_RADIUS+55,WORLD_RADIUS-55),clamp(ty,-WORLD_RADIUS+55,WORLD_RADIUS-55));
