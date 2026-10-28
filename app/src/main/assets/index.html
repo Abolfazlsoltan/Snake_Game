@@ -40,6 +40,9 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 .skin-swatch{width:28px;height:28px;border-radius:50%;display:block;position:relative;box-shadow:inset -4px -5px 8px #0003,0 0 12px currentColor}
 .skin-swatch:after{content:"";position:absolute;top:5px;left:6px;width:7px;height:7px;background:#fff;border-radius:50%;opacity:.8}
 .skin-name{font-size:10px;color:#355c6b}
+.mode-picker{margin:9px 0 10px}
+#home .stats{margin-bottom:8px}
+#home .current-skin-card{margin-top:3px}
 .skin-btn.active .skin-name{color:#125b60;font-weight:800}
 .current-skin-card{display:flex;align-items:center;gap:11px;margin:5px 0 2px;padding:10px 12px;border:1px solid rgba(220,255,255,.20);border-radius:18px;background:rgba(225,251,255,.055);text-align:right}
 .current-skin-swatch{flex:0 0 38px;width:38px;height:38px;border:2px solid rgba(255,255,255,.7);box-shadow:inset -5px -6px 8px #0003,0 0 15px currentColor}
@@ -63,18 +66,27 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 .result-cell span{font-size:10px;color:var(--muted)}
 .hud{position:absolute;inset:0;z-index:2;pointer-events:none}
 .hud-card{position:absolute;top:calc(env(safe-area-inset-top) + 14px);border:1px solid rgba(218,240,255,.13);background:rgba(7,17,29,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:17px;padding:10px 13px;box-shadow:0 7px 22px #0002}
-.score-card{left:14px;min-width:105px;direction:ltr;text-align:left}
+.score-card{left:50%;transform:translateX(-50%);min-width:112px;direction:ltr;text-align:center;padding:7px 15px}
 .score-label{font-size:9px;letter-spacing:1.5px;color:#8faac1;font-weight:800}
 .score-value{font-size:25px;line-height:1.3;font-weight:900}
 .length-line{font-size:10px;color:#b4c8da}
 .rank-card{right:14px;direction:rtl;text-align:right;min-width:113px}
 .rank-label{font-size:10px;color:#a5bbce}
 .rank-value{font-size:20px;line-height:1.35;font-weight:900;color:var(--gold)}
-.pause-btn{pointer-events:auto;position:absolute;top:calc(env(safe-area-inset-top) + 14px);left:50%;transform:translateX(-50%);width:43px;height:43px;border-radius:15px;border:1px solid rgba(218,240,255,.13);background:rgba(7,17,29,.75);display:grid;place-items:center}
+.pause-btn{pointer-events:auto;position:absolute;top:calc(env(safe-area-inset-top) + 14px);left:14px;transform:none;width:43px;height:43px;border-radius:15px;border:1px solid rgba(218,240,255,.13);background:rgba(7,17,29,.75);display:grid;place-items:center}
 .pause-btn svg{width:20px;height:20px}
 .leaderboard{position:absolute;right:14px;top:calc(env(safe-area-inset-top) + 91px);width:132px;max-width:36vw;padding:10px 11px;border-radius:15px;background:rgba(7,17,29,.58);border:1px solid rgba(218,240,255,.09);backdrop-filter:blur(10px)}
 .lb-heading{font-size:9px;color:#8faac1;letter-spacing:.8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
 .lb-row{display:flex;align-items:center;gap:6px;font-size:10px;line-height:1.9;color:#cbd9e7;white-space:nowrap}
+.power-status{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 92px);transform:translateX(-50%);padding:8px 12px;border-radius:14px;background:rgba(18,54,67,.86);border:1px solid rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(20,70,90,.18);color:#fff;font-weight:800;font-size:10px;white-space:nowrap;backdrop-filter:blur(8px)}
+.power-status[hidden]{display:none!important}
+.mode-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0 13px;direction:rtl}
+.mode-btn{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;min-width:0;padding:10px 3px;border-radius:14px;border:1px solid rgba(205,250,250,.16);background:rgba(222,252,255,.055);color:#e9f7f8}
+.mode-btn strong{font-size:11px}
+.mode-btn small{font-size:9px;color:#a9c5cd}
+.mode-btn.active{background:rgba(73,223,193,.14);border-color:#5be2c4;box-shadow:inset 0 0 0 1px rgba(91,226,196,.12)}
+.mode-btn.active strong{color:#b2ffe7}
+@media(max-width:360px){.mode-btn{padding:8px 2px}.mode-btn strong{font-size:10px}.mode-btn small{font-size:8px}.score-card{min-width:104px;padding:6px 9px}.score-value{font-size:22px}}
 .lb-row.me{color:var(--mint2);font-weight:800}
 .lb-num{color:#718aa0;width:11px;text-align:center;font-size:9px;direction:ltr}
 .lb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -93,7 +105,7 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 .controls-hint{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 15px);left:50%;transform:translateX(-50%);font-size:9px;color:#c3d8e8a8;white-space:nowrap;pointer-events:none}
 .toast{position:absolute;z-index:4;left:50%;top:calc(env(safe-area-inset-top) + 155px);transform:translate(-50%,-8px);background:rgba(8,23,37,.91);border:1px solid rgba(85,240,176,.3);color:var(--mint2);border-radius:100px;padding:10px 15px;font-size:11px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-height:690px){.panel{padding:18px 21px;border-radius:24px}.brand-icon{width:52px;height:52px;border-radius:18px}.brand-icon svg{width:40px;height:40px}h1{font-size:30px}.subtitle{margin:9px auto 12px}.stats{margin:10px 0 13px}.skin-btn{min-height:58px}.section-title{margin:11px 2px 7px}.primary,.secondary,.danger{min-height:48px}.tip{margin-top:10px}.joystick{width:105px;height:105px;right:17px;bottom:calc(env(safe-area-inset-bottom) + 18px)}.boost-btn{width:78px;height:78px;left:17px;bottom:calc(env(safe-area-inset-bottom) + 24px)}.joy-knob{width:43px;height:43px}.leaderboard{top:calc(env(safe-area-inset-top) + 86px)}}
+@media(max-height:690px){.panel{padding:18px 21px;border-radius:24px}.brand-icon{width:52px;height:52px;border-radius:18px}.brand-icon svg{width:40px;height:40px}h1{font-size:30px}.subtitle{margin:9px auto 12px}.stats{margin:10px 0 13px}.skin-btn{min-height:58px}.section-title{margin:11px 2px 7px}.primary,.secondary,.danger{min-height:48px}.tip{margin-top:10px}.joystick{width:105px;height:105px;left:17px;bottom:calc(env(safe-area-inset-bottom) + 18px)}.boost-btn{width:78px;height:78px;right:17px;bottom:calc(env(safe-area-inset-bottom) + 24px)}.joy-knob{width:43px;height:43px}.leaderboard{top:calc(env(safe-area-inset-top) + 86px)}}
 @media(min-width:700px){.panel{width:440px}.joystick{width:138px;height:138px;left:38px}.boost-btn{right:38px}.leaderboard{right:28px;width:155px}.score-card{left:28px}.rank-card{right:28px}}
 @media(max-height:700px){#home .panel{padding:17px}.skin-panel{padding:16px}.skin-btn{min-height:54px}.skin-swatch{width:23px;height:23px}}
 </style>
@@ -112,6 +124,11 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
   <div class="stats">
    <div class="stat"><strong id="best-home">0</strong><span>بهترین رکورد</span></div>
    <div class="stat"><strong>۱۶</strong><span>مار رقیب در هر مسابقه</span></div>
+  </div>
+  <div class="mode-picker" id="mode-picker" aria-label="حالت بازی">
+   <button class="mode-btn active" data-mode="classic"><strong>کلاسیک</strong><small>تا حذف شدن</small></button>
+   <button class="mode-btn" data-mode="rush"><strong>۹۰ ثانیه</strong><small>رکورد سرعت</small></button>
+   <button class="mode-btn" data-mode="practice"><strong>تمرینی</strong><small>بدون برخورد</small></button>
   </div>
   
   <div class="current-skin-card">
@@ -172,6 +189,8 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
   <div class="result-grid">
    <div class="result-cell"><strong id="final-length">0</strong><span>طول نهایی</span></div>
    <div class="result-cell"><strong id="final-best">0</strong><span>بهترین رکورد</span></div>
+   <div class="result-cell"><strong id="final-kills">0</strong><span>رقبای حذف‌شده</span></div>
+   <div class="result-cell"><strong id="final-time">00:00</strong><span>زمان بقا</span></div>
   </div>
   <button class="primary" id="again-btn"><svg viewBox="0 0 24 24" fill="none"><path d="M20 7v5h-5M4 17v-5h5M5.5 9A7 7 0 0 1 17 6l3 6M4 12l3 6a7 7 0 0 0 11.5-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>دوباره بازی کن</button>
   <button class="secondary" id="home-from-over">بازگشت به خانه</button>
@@ -179,13 +198,14 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 </div>
 
 <div class="hud" id="hud" hidden>
- <div class="hud-card score-card"><div class="score-label">SCORE</div><div class="score-value" id="score">0</div><div class="length-line">طول&nbsp; <b id="length">12</b></div></div>
+ <div class="hud-card score-card"><div class="score-label">امتیاز</div><div class="score-value" id="score">0</div><div class="length-line">طول <b id="length">18</b> · حذف <b id="kills">0</b></div><div class="length-line" id="timer-line">زمان <b id="timer">00:00</b></div></div>
  <div class="hud-card rank-card"><div class="rank-label">رتبهٔ میدان</div><div class="rank-value" id="rank">#1</div></div>
  <button class="pause-btn" id="pause-btn" aria-label="توقف بازی"><svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
  <div class="leaderboard">
   <div class="lb-heading"><span>برترین‌ها</span><span>طول</span></div>
   <div id="leader-rows"></div>
  </div>
+ <div class="power-status" id="power-status" hidden></div>
 </div>
 <div class="controls" id="controls" hidden>
  <div class="joystick" id="joystick" aria-label="جوی‌استیک جهت حرکت"><div class="joystick-label">حرکت</div><div class="joy-knob" id="joy-knob"></div></div>
