@@ -223,8 +223,8 @@ const $=id=>document.getElementById(id);
 const TAU=Math.PI*2;
 const WORLD_RADIUS=2200;
 const TRAIL_STEP=3.1;
-const SEGMENT_SPACING=3;
-const MAX_TRAIL_POINTS=1150;
+const SEGMENT_SPACING=6;
+const MAX_TRAIL_POINTS=1600;
 const FOOD_COLORS=['#f44767','#ff8e33','#ffd33f','#7de04d','#26d5b6','#30b5ef','#b45be8'];
 const FOOD_CELL_SIZE=96;
 const POWERUP_DEFS={
@@ -388,6 +388,7 @@ function placeFood(x,y){
   if(x===undefined)x=Math.cos(a)*r;
   if(y===undefined)y=Math.sin(a)*r;
  }
+ if(foods.length>=420)return;
  const color=FOOD_COLORS[Math.floor(Math.random()*FOOD_COLORS.length)];
  const bonus=Math.random()<.075;
  foods.push({x,y,r:bonus?random(4.5,5.2):random(3.0,4.4),value:bonus?2:1,color,phase:random(0,TAU),type:'orb',eaten:false});
@@ -476,132 +477,258 @@ function renderLeaderboard(){
 }
 function angleToFood(s){
  let bestFood=null,bestD=Infinity;
- for(let i=0;i<foods.length;i++){
-  const f=foods[i],d=(f.x-s.x)*(f.x-s.x)+(f.y-s.y)*(f.y-s.y);
-  if(d<bestD){bestD=d;bestFood=f}
+ const candidates=nearbyFoods(s.x,s.y,560);
+ for(const f of candidates){
+  const dx=f.x-s.x,dy=f.y-s.y,d=dx*dx+dy*dy;
+  const weighted=d/(f.value===2?1.22:1);
+  if(weighted<bestD){bestD=weighted;bestFood=f}
  }
- if(!bestFood)return s.angle;
- let a=Math.atan2(bestFood.y-s.y,bestFood.x-s.x);
+ let a;
+ if(bestFood)a=Math.atan2(bestFood.y-s.y,bestFood.x-s.x);
+ else{
+  const edge=Math.hypot(s.x,s.y);
+  a=edge>WORLD_RADIUS-420?Math.atan2(-s.y,-s.x):s.angle+s.wander*.22;
+ }
  const edge=Math.hypot(s.x,s.y);
- if(edge>WORLD_RADIUS-280){
+ if(edge>WORLD_RADIUS-300){
   const inward=Math.atan2(-s.y,-s.x);
-  const weight=clamp((edge-(WORLD_RADIUS-280))/240,0,1);
+  const weight=clamp((edge-(WORLD_RADIUS-300))/260,0,1);
   a+=angleDiff(a,inward)*weight;
  }
- if(player&&Math.hypot(player.x-s.x,player.y-s.y)<170){
-  const away=Math.atan2(s.y-player.y,s.x-player.x);
-  a+=angleDiff(a,away)*.48;
+ let avoidX=0,avoidY=0;
+ const reach=104,reach2=reach*reach;
+ for(const other of [player,...bots]){
+  if(!other||other===s||other.dead)continue;
+  const hx=other.x-s.x,hy=other.y-s.y,hd=hx*hx+hy*hy;
+  if(hd<reach2&&hd>1){
+   const d=Math.sqrt(hd),w=(reach-d)/reach;
+   avoidX-=(hx/d)*w*1.7;avoidY-=(hy/d)*w*1.7;
+  }
+  const trailLimit=Math.min(other.trailCount,other.length*SEGMENT_SPACING);
+  for(let i=9;i<trailLimit;i+=12){
+   const p=trailAt(other,i);if(!p)continue;
+   const dx=p.x-s.x,dy=p.y-s.y,d2=dx*dx+dy*dy;
+   if(d2<reach2&&d2>1){
+    const d=Math.sqrt(d2),w=(reach-d)/reach;
+    avoidX-=(dx/d)*w*.82;avoidY-=(dy/d)*w*.82;
+   }
+  }
  }
- s.wander+=random(-.08,.08);
- s.aiTimer+=1;
- if(s.aiTimer%70<2)a+=s.wander*.2;
+ const avoidStrength=Math.min(.78,Math.hypot(avoidX,avoidY)*.38);
+ if(avoidStrength>.03){const away=Math.atan2(avoidY,avoidX);a+=angleDiff(a,away)*avoidStrength}
+ if(player&&!player.dead&&s.length>player.length*.92){
+  const dx=player.x-s.x,dy=player.y-s.y,d2=dx*dx+dy*dy;
+  if(d2<330*330&&d2>90*90){
+   const intercept=Math.atan2(player.y+Math.sin(player.angle)*85-s.y,player.x+Math.cos(player.angle)*85-s.x);
+   a+=angleDiff(a,intercept)*.20;
+  }
+ }
+ s.wander+=random(-.045,.045);s.aiTimer+=1;
+ if(s.aiTimer%9===0)a+=s.wander*.055;
  return a;
 }
 function stepSnake(s,dt,isPlayer){
  if(s.dead)return;
  if(isPlayer){
   const diff=angleDiff(s.angle,s.targetAngle);
-  s.angle+=clamp(diff,-5.2*dt,5.2*dt);
-  s.boost=boostHeld&&s.length>7;
+  s.angle+=clamp(diff,-6.2*dt,6.2*dt);
+  s.boost=(boostHeld&&s.length>7)||activePowerups.speed>0;
  }else{
   s.aiThink-=dt;
-  if(s.aiThink<=0){
-   s.targetAngle=angleToFood(s);
-   s.aiThink=random(.085,.16);
-  }
+  if(s.aiThink<=0){s.targetAngle=angleToFood(s);s.aiThink=random(.085,.15)}
   const diff=angleDiff(s.angle,s.targetAngle);
-  s.angle+=clamp(diff,-3.4*dt,3.4*dt);
-  s.boost=s.length>10&&Math.abs(diff)<.3&&Math.random()<.035;
+  s.angle+=clamp(diff,-3.65*dt,3.65*dt);
+  s.boost=s.length>10&&Math.abs(diff)<.32&&Math.random()<.045;
  }
  let speed=s.baseSpeed;
- if(s.boost){
-  speed*=1.8;s.boostClock+=dt;
-  if(s.boostClock>.18){s.boostClock=0;s.length=Math.max(8,s.length-.045)}
- }else{s.boostClock=0}
+ if(isPlayer){
+  if(boostHeld&&s.length>7){
+   speed*=1.8;s.boostClock+=dt;
+   if(s.boostClock>.18){s.boostClock=0;s.length=Math.max(8,s.length-.055)}
+  }else{s.boostClock=0}
+  if(activePowerups.speed>0)speed*=1.35;
+ }else if(s.boost)speed*=1.42;
  const oldX=s.x,oldY=s.y;
  s.x+=Math.cos(s.angle)*speed*dt;s.y+=Math.sin(s.angle)*speed*dt;
  recordTrail(s,oldX,oldY,s.x,s.y);
  const edge=Math.hypot(s.x,s.y);
- if(isPlayer&&edge>WORLD_RADIUS-25){gameOver('به لبهٔ میدان رسیدی! پیش از رسیدن به مرز، مسیرت را عوض کن.');return}
- if(!isPlayer&&edge>WORLD_RADIUS-45){s.targetAngle=Math.atan2(-s.y,-s.x);s.angle+=angleDiff(s.angle,s.targetAngle)*.09}
+ if(isPlayer&&edge>WORLD_RADIUS-40){
+  if(gameMode==='practice'){
+   s.x=s.x/edge*(WORLD_RADIUS-45);s.y=s.y/edge*(WORLD_RADIUS-45);
+   s.angle=Math.atan2(-s.y,-s.x);s.targetAngle=s.angle;
+  }else{gameOver('به لبهٔ میدان رسیدی! پیش از رسیدن به مرز، مسیرت را عوض کن.');return}
+ }
+ if(!isPlayer&&edge>WORLD_RADIUS-90){
+  s.targetAngle=Math.atan2(-s.y,-s.x);
+  s.angle+=angleDiff(s.angle,s.targetAngle)*Math.min(1,dt*2.6);
+ }
 }
 function eatFood(s,isPlayer){
- const eatDist=(s.radius+6)*(s.radius+6);
- for(let i=foods.length-1;i>=0;i--){
-  const f=foods[i],dx=f.x-s.x,dy=f.y-s.y;
-  const reach=s.radius+f.r+2;
-  if(dx*dx+dy*dy<Math.max(eatDist,reach*reach)){
-   foods.splice(i,1);
+ const candidates=nearbyFoods(s.x,s.y,(s.radius||12)+20);
+ for(const f of candidates){
+  if(f.eaten)continue;
+  const dx=f.x-s.x,dy=f.y-s.y,reach=(s.radius||12)+f.r+4;
+  if(dx*dx+dy*dy<reach*reach){
+   f.eaten=true;foodDirty=true;
    s.length=Math.min(260,s.length+f.value);
-   s.radius=Math.min(isPlayer?17.2:15.4,s.radius+f.value*.025);
+   s.radius=Math.min(isPlayer?17.2:15.4,s.radius+f.value*.018);
    if(isPlayer){
-    score+=f.value*10;updateHud();
-    if(f.value>1)showToast('گوی درخشان! +'+(f.value*10)+' امتیاز');
+    const multiplier=activePowerups.multiplier>0?3:1;
+    const gained=f.value*10*multiplier;score+=gained;
+    if(f.value>1||multiplier>1)showToast('گوی خورده شد! +'+gained);
     else if(score>0&&score%250<10&&performance.now()-spawnToastAt>7000){spawnToastAt=performance.now();showToast('عالیه! ادامه بده')}
    }else s.score+=f.value;
-   for(let j=0;j<3;j++)particles.push({x:f.x,y:f.y,vx:random(-42,42),vy:random(-42,42),life:.24,max:.24,color:f.color});
+   for(let j=0;j<2;j++)particles.push({x:f.x,y:f.y,vx:random(-34,34),vy:random(-34,34),life:.2,max:.2,color:f.color});
   }
  }
 }
 function collidePlayer(){
- if(!player||mode!=='playing')return;
+ if(!player||mode!=='playing'||gameMode==='practice')return;
  for(const b of bots){
   if(b.dead)continue;
-  for(let i=5;i<Math.min(b.trailCount,b.length*4);i+=4){
+  const headDx=b.x-player.x,headDy=b.y-player.y,headReach=(player.radius+b.radius)*.76;
+  if(headDx*headDx+headDy*headDy<headReach*headReach){gameOver('با سر یکی از رقبا برخورد کردی!');return}
+  const bLimit=Math.min(b.trailCount,b.length*SEGMENT_SPACING);
+  for(let i=9;i<bLimit;i+=4){
    const p=trailAt(b,i);if(!p)continue;
-   const dx=p.x-player.x,dy=p.y-player.y,r=player.radius+b.radius*.8;
+   const dx=p.x-player.x,dy=p.y-player.y,r=player.radius+b.radius*.84;
    if(dx*dx+dy*dy<r*r){gameOver('به بدن یکی از مارها برخورد کردی!');return}
   }
-  for(let i=7;i<Math.min(player.trailCount,player.length*4);i+=4){
+  const pLimit=Math.min(player.trailCount,player.length*SEGMENT_SPACING);
+  for(let i=10;i<pLimit;i+=4){
    const p=trailAt(player,i);if(!p)continue;
-   const dx=p.x-b.x,dy=p.y-b.y,r=player.radius+b.radius*.8;
-   if(dx*dx+dy*dy<r*r){killBot(b);break}
+   const dx=p.x-b.x,dy=p.y-b.y,r=player.radius+b.radius*.84;
+   if(dx*dx+dy*dy<r*r){killBot(b,true);break}
   }
  }
 }
-function killBot(b){
+function killBot(b,credited){
  if(b.dead)return;
- const available=Math.min(b.trailCount,Math.max(20,b.length*3));
- const loot=Math.min(42,Math.max(14,Math.floor(b.length*1.45)));
+ const available=Math.min(b.trailCount,Math.max(20,b.length*SEGMENT_SPACING));
+ const loot=Math.min(44,Math.max(15,Math.floor(b.length*1.35)));
  for(let i=0;i<loot;i++){
-  const index=Math.floor(random(3,available));
-  const p=trailAt(b,index)||{x:b.x,y:b.y};
-  placeFood(clamp(p.x+random(-11,11),-WORLD_RADIUS+55,WORLD_RADIUS-55),clamp(p.y+random(-11,11),-WORLD_RADIUS+55,WORLD_RADIUS-55));
+  const index=Math.floor(random(3,available)),p=trailAt(b,index)||{x:b.x,y:b.y};
+  placeFood(clamp(p.x+random(-12,12),-WORLD_RADIUS+55,WORLD_RADIUS-55),clamp(p.y+random(-12,12),-WORLD_RADIUS+55,WORLD_RADIUS-55));
  }
- b.dead=true;b.respawn=2.2;
- showToast('یک رقیب از میدان خارج شد!');
+ b.dead=true;b.respawn=2.1;
+ if(credited){kills++;const reward=Math.max(20,Math.round(b.length*8));score+=reward;showToast('رقیب حذف شد! +'+reward)}
+ else if(Math.random()<.4)showToast(b.name+' از میدان خارج شد');
 }
 function respawnBot(b){
- const a=random(0,TAU),r=random(430,1420);
+ const a=random(0,TAU),r=random(430,1450);
  let x=player.x+Math.cos(a)*r,y=player.y+Math.sin(a)*r;
  const edge=Math.hypot(x,y),limit=WORLD_RADIUS-260;
  if(edge>limit){x=x/edge*limit;y=y/edge*limit}
  b.x=x;b.y=y;b.angle=random(0,TAU);b.targetAngle=b.angle;
  b.length=Math.floor(random(13,23));b.dead=false;b.baseSpeed=random(177,213);
  b.aiThink=random(0,.14);b.radius=Math.min(13.6,Math.max(10.5,b.radius));
- resetTrail(b,b.length*4+70);
+ resetTrail(b,b.length*SEGMENT_SPACING+45);
+}
+function spawnPowerup(){
+ if(!player||powerups.length>=3)return;
+ const keys=Object.keys(POWERUP_DEFS),type=keys[Math.floor(Math.random()*keys.length)],def=POWERUP_DEFS[type];
+ const a=random(0,TAU),dist=random(280,820);
+ let x=player.x+Math.cos(a)*dist,y=player.y+Math.sin(a)*dist;
+ const edge=Math.hypot(x,y),limit=WORLD_RADIUS-180;
+ if(edge>limit){x=x/edge*limit;y=y/edge*limit}
+ powerups.push({x,y,type,color:def.color,symbol:def.symbol,phase:random(0,TAU),born:runTime});
+}
+function updatePowerups(dt){
+ for(const key of Object.keys(activePowerups))activePowerups[key]=Math.max(0,activePowerups[key]-dt);
+ nextPowerSpawn-=dt;
+ if(nextPowerSpawn<=0){if(powerups.length<3)spawnPowerup();nextPowerSpawn=random(13,19)}
+ for(let i=powerups.length-1;i>=0;i--){
+  const p=powerups[i],dx=p.x-player.x,dy=p.y-player.y,r=player.radius+19;
+  if(dx*dx+dy*dy<r*r){
+   const def=POWERUP_DEFS[p.type];activePowerups[p.type]=def.duration;
+   powerups.splice(i,1);showToast(def.name+' فعال شد!');
+  }
+ }
+ if(activePowerups.magnet>0){
+  const radius=300,r2=radius*radius;
+  for(const f of foods){
+   if(f.eaten)continue;
+   const dx=f.x-player.x,dy=f.y-player.y,d2=dx*dx+dy*dy;
+   if(d2<r2&&d2>4){const d=Math.sqrt(d2),pull=(1-d/radius)*190*dt;f.x-=dx/d*pull;f.y-=dy/d*pull}
+  }
+ }
+ if(activePowerups.growth>0){
+  growthTick+=dt;
+  while(growthTick>=.72){
+   growthTick-=.72;
+   if(player.length<260){player.length++;player.radius=Math.min(17.2,player.radius+.015)}
+   score+=8;
+  }
+ }else growthTick=0;
+}
+function drawPowerups(){
+ for(const p of powerups){
+  const x=p.x-camera.x+W/2,y=p.y-camera.y+H*.46;
+  if(x<-35||x>W+35||y<-35||y>H+35)continue;
+  const pulse=1+Math.sin(elapsed*4+p.phase)*.07,size=27*pulse;
+  ctx.save();ctx.translate(x,y);ctx.globalAlpha=.20;ctx.fillStyle=p.color;
+  ctx.beginPath();ctx.arc(0,0,size*1.05,0,TAU);ctx.fill();ctx.globalAlpha=1;
+  ctx.shadowColor=p.color;ctx.shadowBlur=10;
+  const g=ctx.createLinearGradient(-size/2,-size/2,size/2,size/2);
+  g.addColorStop(0,'#ffffff');g.addColorStop(.16,p.color);g.addColorStop(1,'#2a637c');
+  ctx.beginPath();ctx.moveTo(-size*.34,-size*.43);ctx.quadraticCurveTo(-size*.43,-size*.43,-size*.43,-size*.30);
+  ctx.lineTo(-size*.43,size*.30);ctx.quadraticCurveTo(-size*.43,size*.43,-size*.30,size*.43);
+  ctx.lineTo(size*.30,size*.43);ctx.quadraticCurveTo(size*.43,size*.43,size*.43,size*.30);
+  ctx.lineTo(size*.43,-size*.30);ctx.quadraticCurveTo(size*.43,-size*.43,size*.30,-size*.43);ctx.closePath();
+  ctx.fillStyle=g;ctx.fill();ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,.82)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.fillStyle='#143746';ctx.font='900 '+(p.symbol.length>1?10:14)+'px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.symbol,0,1);
+  ctx.restore();
+ }
+}
+function resolveBotCollisions(dt){
+ if(gameMode==='practice')return;
+ botCollisionTimer-=dt;
+ if(botCollisionTimer>0)return;
+ botCollisionTimer=.13;
+ for(const a of bots){
+  if(a.dead)continue;
+  for(const b of bots){
+   if(a===b||b.dead)continue;
+   let collided=false;const limit=Math.min(b.trailCount,b.length*SEGMENT_SPACING);
+   for(let i=10;i<limit;i+=7){
+    const p=trailAt(b,i);if(!p)continue;
+    const dx=p.x-a.x,dy=p.y-a.y,r=a.radius+b.radius*.72;
+    if(dx*dx+dy*dy<r*r){collided=true;break}
+   }
+   if(collided){killBot(a,false);break}
+  }
+ }
 }
 function update(dt){
- elapsed+=dt;frame++;
+ elapsed+=dt;
  if(mode!=='playing'||!player)return;
+ runTime+=dt;
+ if(gameMode==='rush'){
+  timeLeft=Math.max(0,timeLeft-dt);
+  if(timeLeft<=0){gameOver('وقت مسابقه تمام شد!');return}
+ }
+ rebuildFoodGrid();
  stepSnake(player,dt,true);
  if(mode!=='playing')return;
  for(const b of bots){
   if(b.dead){b.respawn-=dt;if(b.respawn<=0)respawnBot(b);continue}
-  stepSnake(b,dt,false);
-  eatFood(b,false);
+  stepSnake(b,dt,false);eatFood(b,false);
  }
+ updatePowerups(dt);
  eatFood(player,true);
  collidePlayer();
- while(foods.length<235)placeFood();
+ resolveBotCollisions(dt);
+ if(foodDirty){foods=foods.filter(f=>!f.eaten);foodDirty=false}
+ while(foods.length<240)placeFood();
  for(let i=particles.length-1;i>=0;i--){
   const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
   if(p.life<=0)particles.splice(i,1);
  }
- camera.x+=(player.x-camera.x)*Math.min(1,dt*7.0);
- camera.y+=(player.y-camera.y)*Math.min(1,dt*7.0);
+ camera.x+=(player.x-camera.x)*Math.min(1,dt*8.2);
+ camera.y+=(player.y-camera.y)*Math.min(1,dt*8.2);
  leaderTimer+=dt;
- if(leaderTimer>.36){leaderTimer=0;updateHud();renderLeaderboard()}
+ if(leaderTimer>.22){leaderTimer=0;updateHud();renderLeaderboard()}
 }
 function circle(x,y,r,color){
  ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
