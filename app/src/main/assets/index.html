@@ -226,6 +226,13 @@ const TRAIL_STEP=3.1;
 const SEGMENT_SPACING=3;
 const MAX_TRAIL_POINTS=1150;
 const FOOD_COLORS=['#f44767','#ff8e33','#ffd33f','#7de04d','#26d5b6','#30b5ef','#b45be8'];
+const FOOD_CELL_SIZE=96;
+const POWERUP_DEFS={
+ magnet:{name:'جذب گوی‌ها',short:'جذب',symbol:'M',color:'#50e4db',duration:9},
+ speed:{name:'سرعت بیشتر',short:'سرعت',symbol:'↗',color:'#ffaf47',duration:8},
+ multiplier:{name:'امتیاز سه‌برابر',short:'×۳',symbol:'3×',color:'#b98cff',duration:9},
+ growth:{name:'رشد سریع',short:'رشد',symbol:'+',color:'#92e760',duration:7}
+};
 const skins={
  mint:{name:'نعنایی',main:'#55e9ad',light:'#d4ffeb',dark:'#17845f',glow:'#60ffbd',pattern:'solid',head:'classic'},
  ocean:{name:'اقیانوس',main:'#42baff',light:'#d0f1ff',dark:'#1766b5',glow:'#45bdff',pattern:'bands',head:'robot'},
@@ -259,7 +266,9 @@ const botColors=[
  {main:'#aeb4c8',light:'#f8f8ff',dark:'#5b6079',glow:'#b6c8ff',pattern:'spots',head:'robot'}
 ];
 const botNames=['توفان','پالس','نئون','میرا','فندق','آذر','رعد','زحل','یخی','آلفا','شهاب','پنبه','برگ','سایه','فیروزه','آهنین'];
-let W=0,H=0,DPR=1,mode='menu',player=null,bots=[],foods=[],particles=[],previewSnakes=[],previewFoods=[];
+let W=0,H=0,DPR=1,mode='menu',player=null,bots=[],foods=[],particles=[],previewSnakes=[],previewFoods=[],powerups=[];
+let foodGrid=new Map(),foodDirty=false,gameMode=readString('snakeArenaMode','classic'),runTime=0,timeLeft=0,kills=0,nextPowerSpawn=8,growthTick=0,botCollisionTimer=0;
+const activePowerups={magnet:0,speed:0,multiplier:0,growth:0};
 const snakeSpriteCache=new Map(),foodSpriteCache=new Map();
 let arenaPattern=null;
 let score=0,best=readNumber('snakeArenaBest',0),selectedSkin=readString('snakeArenaSkin','mint');
@@ -269,7 +278,9 @@ const camera={x:0,y:0};
 const home=$('home'),skinScreen=$('skin-screen'),pauseScreen=$('pause-screen'),overScreen=$('over-screen'),hud=$('hud'),controls=$('controls');
 $('best-home').textContent=formatNumber(best);
 if(!skins[selectedSkin])selectedSkin='mint';
+if(!['classic','rush','practice'].includes(gameMode))gameMode='classic';
 syncSkinPicker();
+syncGameModePicker();
 function readNumber(k,f){try{const n=Number(localStorage.getItem(k));return Number.isFinite(n)&&n>=0?n:f}catch(e){return f}}
 function readString(k,f){try{return localStorage.getItem(k)||f}catch(e){return f}}
 function save(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}
@@ -278,6 +289,7 @@ function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
 function dist2(a,b){const x=a.x-b.x,y=a.y-b.y;return x*x+y*y}
 function angleDiff(a,b){return Math.atan2(Math.sin(b-a),Math.cos(b-a))}
 function formatNumber(n){return Math.floor(n).toLocaleString('en-US')}
+function formatTime(seconds){const t=Math.max(0,Math.floor(seconds));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
 function resize(){
  const rect=canvas.getBoundingClientRect();
  W=Math.max(1,rect.width);H=Math.max(1,rect.height);DPR=Math.min(1.5,window.devicePixelRatio||1);
@@ -288,6 +300,14 @@ window.addEventListener('resize',resize,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(resize,160),{passive:true});
 resize();
 
+function syncGameModePicker(){
+ document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===gameMode));
+}
+document.querySelectorAll('.mode-btn').forEach(btn=>btn.addEventListener('click',()=>{
+ gameMode=btn.dataset.mode;
+ save('snakeArenaMode',gameMode);
+ syncGameModePicker();
+}));
 function syncSkinPicker(){
  document.querySelectorAll('.skin-btn').forEach(b=>b.classList.toggle('active',b.dataset.skin===selectedSkin));
  const skin=skins[selectedSkin]||skins.mint;
@@ -332,6 +352,29 @@ function recordTrail(s,oldX,oldY,newX,newY){
   s.trailDistance-=TRAIL_STEP;
  }
 }
+function rebuildFoodGrid(){
+ foodGrid.clear();
+ for(const f of foods){
+  if(f.eaten)continue;
+  const cx=Math.floor(f.x/FOOD_CELL_SIZE),cy=Math.floor(f.y/FOOD_CELL_SIZE),key=cx+','+cy;
+  let bucket=foodGrid.get(key);
+  if(!bucket){bucket=[];foodGrid.set(key,bucket)}
+  bucket.push(f);
+ }
+}
+function nearbyFoods(x,y,radius){
+ const out=[],minX=Math.floor((x-radius)/FOOD_CELL_SIZE),maxX=Math.floor((x+radius)/FOOD_CELL_SIZE);
+ const minY=Math.floor((y-radius)/FOOD_CELL_SIZE),maxY=Math.floor((y+radius)/FOOD_CELL_SIZE);
+ for(let cy=minY;cy<=maxY;cy++)for(let cx=minX;cx<=maxX;cx++){
+  const bucket=foodGrid.get(cx+','+cy);
+  if(bucket)for(const f of bucket)if(!f.eaten)out.push(f);
+ }
+ return out;
+}
+function resetActivePowerups(){
+ for(const key of Object.keys(activePowerups))activePowerups[key]=0;
+ nextPowerSpawn=random(6,10);growthTick=0;powerups=[];foodGrid.clear();foodDirty=false;botCollisionTimer=0;
+}
 function makeSnake(x,y,angle,color,name,isPlayer){
  const length=isPlayer?18:Math.floor(random(14,26));
  const radius=isPlayer?13.2:random(10.8,13.1);
@@ -347,7 +390,7 @@ function placeFood(x,y){
  }
  const color=FOOD_COLORS[Math.floor(Math.random()*FOOD_COLORS.length)];
  const bonus=Math.random()<.075;
- foods.push({x,y,r:bonus?random(4.5,5.2):random(3.0,4.4),value:bonus?2:1,color,phase:random(0,TAU),type:'orb'});
+ foods.push({x,y,r:bonus?random(4.5,5.2):random(3.0,4.4),value:bonus?2:1,color,phase:random(0,TAU),type:'orb',eaten:false});
 }
 function dropFood(x,y,count){
  for(let i=0;i<count;i++){
@@ -356,8 +399,10 @@ function dropFood(x,y,count){
  }
 }
 function startGame(){
- score=0;elapsed=0;leaderTimer=0;spawnToastAt=0;boostHeld=false;pointerAim=null;joyPointer=null;joyVector={x:0,y:0};
+ score=0;elapsed=0;runTime=0;timeLeft=gameMode==='rush'?90:0;kills=0;leaderTimer=0;spawnToastAt=0;
+ boostHeld=false;pointerAim=null;joyPointer=null;joyVector={x:0,y:0};
  $('joy-knob').style.transform='translate(-50%,-50%)';
+ resetActivePowerups();
  const current=skins[selectedSkin]||skins.mint;
  player=makeSnake(0,0,random(-.2,.2),current,'تو',true);
  bots=[];
@@ -366,12 +411,12 @@ function startGame(){
   bots.push(makeSnake(Math.cos(a)*r,Math.sin(a)*r,random(0,TAU),botColors[i],botNames[i],false));
  }
  foods=[];
- for(let i=0;i<145;i++)placeFood();
- for(let i=0;i<86;i++)placeFood(random(-650,650),random(-920,920));
- while(foods.length<235)placeFood();
+ for(let i=0;i<150;i++)placeFood();
+ for(let i=0;i<85;i++)placeFood(random(-650,650),random(-920,920));
+ while(foods.length<240)placeFood();
  particles=[];
  camera.x=player.x;camera.y=player.y;
- mode='playing';syncScreens();updateHud();renderLeaderboard();
+ mode='playing';syncScreens();updateHud();renderLeaderboard();rebuildFoodGrid();
  lastTime=performance.now();
 }
 function pauseGame(){
@@ -390,10 +435,12 @@ function gameOver(reason){
  if(mode!=='playing')return;
  mode='over';boostHeld=false;
  if(score>best){best=score;save('snakeArenaBest',best);$('over-badge').textContent='✦ رکورد تازه!';$('over-message').textContent='رکورد جدید ثبت شد؛ این بار از همیشه بزرگ‌تر شدی.'}
- else{$('over-badge').textContent='✦ پایان مسابقه';$('over-message').textContent=reason||'هر دور، یک فرصت تازه برای رکورد بهتر است.'}
+ else{$('over-badge').textContent=gameMode==='rush'&&timeLeft<=0?'پایان زمان!':'پایان مسابقه';$('over-message').textContent=reason||'هر دور، یک فرصت تازه برای رکورد بهتر است.'}
  $('final-score').textContent=formatNumber(score);
  $('final-length').textContent=formatNumber(player?player.length:0);
  $('final-best').textContent=formatNumber(best);
+ $('final-kills').textContent=formatNumber(kills);
+ $('final-time').textContent=formatTime(runTime);
  $('best-home').textContent=formatNumber(best);
  syncScreens();
 }
@@ -406,6 +453,17 @@ function updateHud(){
  if(!player)return;
  $('score').textContent=formatNumber(score);
  $('length').textContent=formatNumber(player.length);
+ $('kills').textContent=formatNumber(kills);
+ $('timer').textContent=formatTime(gameMode==='rush'?timeLeft:runTime);
+ const timerLine=$('timer-line');
+ if(timerLine&&timerLine.firstChild)timerLine.firstChild.textContent=gameMode==='rush'?'باقی‌مانده ':'زمان ';
+ const active=[];
+ for(const key of Object.keys(POWERUP_DEFS)){
+  if(activePowerups[key]>0)active.push(POWERUP_DEFS[key].short+' '+Math.ceil(activePowerups[key])+'ث');
+ }
+ const powerStatus=$('power-status');
+ if(active.length){powerStatus.hidden=false;powerStatus.textContent=active.join('  ·  ')}
+ else{powerStatus.hidden=true;powerStatus.textContent=''}
 }
 function renderLeaderboard(){
  if(!player)return;
@@ -414,7 +472,7 @@ function renderLeaderboard(){
  rows.sort((a,b)=>b.length-a.length);
  const place=rows.findIndex(r=>r.me)+1;
  $('rank').textContent='#'+place;
- $('leader-rows').innerHTML=rows.slice(0,7).map((r,i)=>'<div class="lb-row '+(r.me?'me':'')+'"><span class="lb-num">'+(i+1)+'</span><i class="lb-dot" style="background:'+r.color+'"></i><span class="lb-name">'+r.name+'</span><span class="lb-len">'+r.length+'</span></div>').join('');
+ $('leader-rows').innerHTML=rows.slice(0,10).map((r,i)=>'<div class="lb-row '+(r.me?'me':'')+'"><span class="lb-num">'+(i+1)+'</span><i class="lb-dot" style="background:'+r.color+'"></i><span class="lb-name">'+r.name+'</span><span class="lb-len">'+r.length+'</span></div>').join('');
 }
 function angleToFood(s){
  let bestFood=null,bestD=Infinity;
