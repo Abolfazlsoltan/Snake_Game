@@ -292,7 +292,7 @@ function formatNumber(n){return Math.floor(n).toLocaleString('en-US')}
 function formatTime(seconds){const t=Math.max(0,Math.floor(seconds));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
 function resize(){
  const rect=canvas.getBoundingClientRect();
- W=Math.max(1,rect.width);H=Math.max(1,rect.height);DPR=Math.min(1.5,window.devicePixelRatio||1);
+ W=Math.max(1,rect.width);H=Math.max(1,rect.height);DPR=Math.min(1.25,window.devicePixelRatio||1);
  canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
  ctx.setTransform(DPR,0,0,DPR,0,0);
 }
@@ -788,9 +788,9 @@ function drawFood(list){
  const items=list||foods;
  const left=camera.x-W*.60,right=camera.x+W*.60,top=camera.y-H*.62,bottom=camera.y+H*.62;
  for(const f of items){
-  if(f.x<left||f.x>right||f.y<top||f.y>bottom)continue;
+  if(f.eaten||f.x<left||f.x>right||f.y<top||f.y>bottom)continue;
   const sx=f.x-camera.x+W/2,sy=f.y-camera.y+H*.46;
-  const sz=f.r*3.2*(1+Math.sin(elapsed*3+f.phase)*.045);
+  const sz=f.r*2.25*(1+Math.sin(elapsed*3+f.phase)*.04);
   const sprite=getFoodSprite(f.color);
   ctx.drawImage(sprite,sx-sz/2,sy-sz/2,sz,sz);
  }
@@ -877,15 +877,14 @@ function drawSnake(s){
  for(let i=count;i>=1;i--){
   const index=i*spacing,p=trailAt(s,index);if(!p)continue;
   const x=p.x-camera.x+W/2,y=p.y-camera.y+H*.46;
-  if(x<-26||x>W+26||y<-26||y>H+26)continue;
-  const ahead=trailAt(s,Math.max(0,index-spacing));
-  const a=ahead?Math.atan2(ahead.y-p.y,ahead.x-p.x):s.angle;
-  const sr=r*(.78+.22*(1-i/Math.max(1,count))),size=sr*2.56;
-  ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.drawImage(sprites.body,-size/2,-size/2,size,size);ctx.restore();
+  if(x<-28||x>W+28||y<-28||y>H+28)continue;
+  const sr=r*(.9+.1*(1-i/Math.max(1,count))),size=sr*2.1;
+  // The body uses rounded beads inspired by the reference; cached sprites reduce per-frame paint work.
+  ctx.drawImage(sprites.body,x-size/2,y-size/2,size,size);
  }
  if(s.boost){
-  ctx.globalAlpha=.24;ctx.fillStyle=s.color.glow||s.color.main;
-  ctx.beginPath();ctx.ellipse(hx-Math.cos(s.angle)*r*.5,hy-Math.sin(s.angle)*r*.5,r*1.45,r*1.15,s.angle,0,TAU);ctx.fill();ctx.globalAlpha=1;
+  ctx.globalAlpha=.25;ctx.fillStyle=s.color.glow||s.color.main;
+  ctx.beginPath();ctx.ellipse(hx-Math.cos(s.angle)*r*.5,hy-Math.sin(s.angle)*r*.5,r*1.35,r*1.1,s.angle,0,TAU);ctx.fill();ctx.globalAlpha=1;
  }
  const hw=r*3.22,hh=r*2.48;
  ctx.save();ctx.translate(hx,hy);ctx.rotate(s.angle);ctx.drawImage(sprites.head,-hw*.5,-hh*.5,hw,hh);ctx.restore();
@@ -939,11 +938,15 @@ function render(dt){
  if(mode==='menu'||mode==='skins'){drawMenuArena(dt);return}
  drawBackground();
  ctx.save();ctx.translate(W/2-camera.x,H*.46-camera.y);
- ctx.strokeStyle='rgba(40,111,130,.38)';ctx.lineWidth=18;ctx.beginPath();ctx.arc(0,0,WORLD_RADIUS,0,TAU);ctx.stroke();
- ctx.strokeStyle='rgba(58,125,143,.86)';ctx.lineWidth=4;ctx.stroke();
- ctx.strokeStyle='rgba(255,255,255,.78)';ctx.lineWidth=1.5;ctx.stroke();
+ const pulse=1+Math.sin(elapsed*1.7)*.035;
+ ctx.shadowColor='rgba(50,191,185,.28)';ctx.shadowBlur=16;
+ ctx.strokeStyle='rgba(40,111,130,.22)';ctx.lineWidth=24*pulse;ctx.beginPath();ctx.arc(0,0,WORLD_RADIUS,0,TAU);ctx.stroke();
+ ctx.shadowBlur=0;ctx.strokeStyle='rgba(58,125,143,.86)';ctx.lineWidth=4;ctx.stroke();
+ ctx.strokeStyle='rgba(255,255,255,.80)';ctx.lineWidth=1.5;ctx.stroke();
+ ctx.setLineDash([12,18]);ctx.strokeStyle='rgba(255,255,255,.46)';ctx.lineWidth=1.6;ctx.stroke();ctx.setLineDash([]);
  ctx.restore();
  drawFood();
+ drawPowerups();
  for(const b of bots)drawSnake(b);
  if(player)drawSnake(player);
  drawParticles();
@@ -1030,6 +1033,7 @@ $('home-from-over').addEventListener('click',goHome);
 window.gameHandleBack=function(){
  if(mode==='playing'){pauseGame();return true}
  if(mode==='paused'){goHome();return true}
+ if(mode==='skins'){mode='menu';syncScreens();return true}
  return false;
 };
 window.pauseForSystem=function(){if(mode==='playing')pauseGame()};
