@@ -13,9 +13,13 @@ body{user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit;cursor:pointer;border:0;touch-action:manipulation}
 #shell{position:fixed;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#17334a 0%,#0a1a2b 48%,#07111d 100%)}
 #game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-.screen{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:clamp(18px,5vw,34px);background:linear-gradient(180deg,rgba(4,12,22,.25),rgba(4,12,22,.72));backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.screen{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:clamp(16px,4vw,28px);background:rgba(10,34,47,.22);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px)}
+#home.screen{align-items:flex-end;padding-bottom:calc(env(safe-area-inset-bottom) + 18px);background:linear-gradient(180deg,rgba(11,45,57,.01) 0%,rgba(11,45,57,.07) 48%,rgba(11,45,57,.20) 100%)}
+#skin-screen.screen,#pause-screen.screen,#over-screen.screen{background:rgba(9,28,40,.50);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .screen[hidden],.hud[hidden],.controls[hidden]{display:none!important}
-.panel{width:min(100%,440px);max-height:94%;overflow:auto;border:1px solid rgba(180,223,250,.15);border-radius:30px;padding:clamp(22px,5.5vw,32px);background:linear-gradient(150deg,rgba(20,42,62,.97),rgba(8,22,37,.97));box-shadow:0 24px 80px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.06);text-align:center;scrollbar-width:none}
+.panel{width:min(100%,440px);max-height:92%;overflow:auto;border:1px solid rgba(255,255,255,.48);border-radius:27px;padding:clamp(20px,5vw,28px);background:linear-gradient(150deg,rgba(18,47,60,.93),rgba(8,31,44,.94));box-shadow:0 18px 54px rgba(19,62,75,.24),inset 0 1px 0 rgba(255,255,255,.22);text-align:center;scrollbar-width:none}
+#home .panel{background:linear-gradient(150deg,rgba(18,49,62,.88),rgba(8,31,44,.91));border-color:rgba(228,255,255,.36);padding:22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.skin-panel{width:min(100%,460px)}
 .panel::-webkit-scrollbar{display:none}
 .brand{display:flex;align-items:center;justify-content:center;gap:13px;margin-bottom:6px}
 .brand-icon{width:66px;height:66px;display:grid;place-items:center;border-radius:23px;background:linear-gradient(145deg,#18394b,#0b1b2b);border:1px solid rgba(100,245,185,.22);box-shadow:0 8px 26px rgba(38,226,153,.09)}
@@ -29,14 +33,20 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 .stat span{font-size:11px;color:var(--muted)}
 .section-title{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#dce9f5;margin:16px 2px 10px}
 .section-title small{color:var(--muted);font-size:10px;font-weight:400}
-.skins{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.skin-btn{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:15px;min-height:68px;padding:8px 3px;transition:transform .15s,border-color .15s,background .15s}
+.skins{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px 0 12px}
+.skin-btn{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;border:1px solid rgba(32,91,110,.12);background:rgba(238,255,255,.58);border-radius:15px;min-height:65px;padding:8px 3px;transition:transform .15s,border-color .15s,background .15s;color:#173b4b}
 .skin-btn:active{transform:scale(.96)}
-.skin-btn.active{border-color:var(--mint);background:rgba(85,240,176,.09);box-shadow:0 0 0 1px rgba(85,240,176,.08)}
+.skin-btn.active{border-color:#279cb0;background:rgba(90,226,206,.24);box-shadow:0 0 0 1px rgba(85,240,176,.14)}
 .skin-swatch{width:28px;height:28px;border-radius:50%;display:block;position:relative;box-shadow:inset -4px -5px 8px #0003,0 0 12px currentColor}
 .skin-swatch:after{content:"";position:absolute;top:5px;left:6px;width:7px;height:7px;background:#fff;border-radius:50%;opacity:.8}
-.skin-name{font-size:10px;color:#cbd9e8}
-.skin-btn.active .skin-name{color:var(--mint2)}
+.skin-name{font-size:10px;color:#355c6b}
+.skin-btn.active .skin-name{color:#125b60;font-weight:800}
+.current-skin-card{display:flex;align-items:center;gap:11px;margin:5px 0 2px;padding:10px 12px;border:1px solid rgba(220,255,255,.20);border-radius:18px;background:rgba(225,251,255,.055);text-align:right}
+.current-skin-swatch{flex:0 0 38px;width:38px;height:38px;border:2px solid rgba(255,255,255,.7);box-shadow:inset -5px -6px 8px #0003,0 0 15px currentColor}
+.current-skin-copy{display:flex;flex-direction:column;gap:3px;flex:1}
+.current-skin-copy small{font-size:10px;color:#a8c8d2}
+.current-skin-copy strong{font-size:13px;color:#f2fffb}
+.skin-open-btn{padding:10px 12px;border:1px solid rgba(178,243,238,.25);border-radius:12px;background:rgba(96,226,209,.12);font-size:11px;font-weight:800;color:#b9fff0}
 .primary,.secondary,.danger{width:100%;border-radius:17px;min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:15px;transition:transform .12s,filter .12s}
 .primary{color:#052018;background:linear-gradient(110deg,#80ffc7,#3fdfa3);box-shadow:0 8px 24px rgba(55,229,158,.18)}
 .primary:active,.secondary:active,.danger:active{transform:scale(.985);filter:brightness(.95)}
@@ -71,11 +81,11 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 .lb-name{overflow:hidden;text-overflow:ellipsis;flex:1}
 .lb-len{font-size:9px;direction:ltr;color:#8faac1}
 .controls{position:absolute;inset:0;z-index:3;pointer-events:none}
-.joystick{pointer-events:auto;position:absolute;right:22px;bottom:calc(env(safe-area-inset-bottom) + 24px);width:122px;height:122px;border:1px solid rgba(194,226,249,.19);border-radius:50%;background:radial-gradient(circle,rgba(125,166,196,.13),rgba(27,60,82,.27));box-shadow:inset 0 0 0 10px rgba(255,255,255,.018);touch-action:none}
+.joystick{pointer-events:auto;position:absolute;left:22px;bottom:calc(env(safe-area-inset-bottom) + 24px);width:122px;height:122px;border:1px solid rgba(194,226,249,.19);border-radius:50%;background:radial-gradient(circle,rgba(125,166,196,.13),rgba(27,60,82,.27));box-shadow:inset 0 0 0 10px rgba(255,255,255,.018);touch-action:none}
 .joystick:before{content:"";position:absolute;inset:23px;border:1px dashed rgba(176,215,241,.12);border-radius:50%}
 .joystick-label{position:absolute;inset:0;display:grid;place-items:center;color:#9cb4c9;font-size:9px;letter-spacing:1px;pointer-events:none}
 .joy-knob{position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%);border-radius:50%;background:linear-gradient(145deg,#f2fff9,#6beeb5);box-shadow:0 5px 17px #0005,0 0 18px #55f0b047;border:2px solid #d5ffeb}
-.boost-btn{pointer-events:auto;position:absolute;left:22px;bottom:calc(env(safe-area-inset-bottom) + 34px);width:91px;height:91px;border-radius:50%;background:radial-gradient(circle at 35% 25%,#ffde87,#ff9c48 70%);color:#3d210a;border:2px solid #ffebae;box-shadow:0 8px 24px #0004,0 0 25px #ffb05230;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;touch-action:none}
+.boost-btn{pointer-events:auto;position:absolute;right:22px;bottom:calc(env(safe-area-inset-bottom) + 34px);width:91px;height:91px;border-radius:50%;background:radial-gradient(circle at 35% 25%,#ffde87,#ff9c48 70%);color:#3d210a;border:2px solid #ffebae;box-shadow:0 8px 24px #0004,0 0 25px #ffb05230;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;touch-action:none}
 .boost-btn:active,.boost-btn.on{filter:brightness(1.14);transform:scale(.97)}
 .boost-btn svg{width:27px;height:27px}
 .boost-btn strong{font-size:11px}
@@ -84,7 +94,8 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
 .toast{position:absolute;z-index:4;left:50%;top:calc(env(safe-area-inset-top) + 155px);transform:translate(-50%,-8px);background:rgba(8,23,37,.91);border:1px solid rgba(85,240,176,.3);color:var(--mint2);border-radius:100px;padding:10px 15px;font-size:11px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-height:690px){.panel{padding:18px 21px;border-radius:24px}.brand-icon{width:52px;height:52px;border-radius:18px}.brand-icon svg{width:40px;height:40px}h1{font-size:30px}.subtitle{margin:9px auto 12px}.stats{margin:10px 0 13px}.skin-btn{min-height:58px}.section-title{margin:11px 2px 7px}.primary,.secondary,.danger{min-height:48px}.tip{margin-top:10px}.joystick{width:105px;height:105px;right:17px;bottom:calc(env(safe-area-inset-bottom) + 18px)}.boost-btn{width:78px;height:78px;left:17px;bottom:calc(env(safe-area-inset-bottom) + 24px)}.joy-knob{width:43px;height:43px}.leaderboard{top:calc(env(safe-area-inset-top) + 86px)}}
-@media(min-width:700px){.panel{width:440px}.joystick{width:138px;height:138px;right:38px}.boost-btn{left:38px}.leaderboard{right:28px;width:155px}.score-card{left:28px}.rank-card{right:28px}}
+@media(min-width:700px){.panel{width:440px}.joystick{width:138px;height:138px;left:38px}.boost-btn{right:38px}.leaderboard{right:28px;width:155px}.score-card{left:28px}.rank-card{right:28px}}
+@media(max-height:700px){#home .panel{padding:17px}.skin-panel{padding:16px}.skin-btn{min-height:54px}.skin-swatch{width:23px;height:23px}}
 </style>
 </head>
 <body>
@@ -102,7 +113,26 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
    <div class="stat"><strong id="best-home">0</strong><span>بهترین رکورد</span></div>
    <div class="stat"><strong>۱۶</strong><span>مار رقیب در هر مسابقه</span></div>
   </div>
-  <div class="section-title"><span>پوستهٔ مار</span><small>رنگ دلخواهت را انتخاب کن</small></div>
+  
+  <div class="current-skin-card">
+   <span class="skin-swatch current-skin-swatch" id="current-skin-swatch"></span>
+   <div class="current-skin-copy"><small>پوستهٔ فعال</small><strong id="current-skin-name">نعنایی</strong></div>
+   <button class="skin-open-btn" id="skins-btn">تغییر ظاهر</button>
+  </div>
+  <button class="primary" id="play-btn" style="margin-top:10px">
+   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" fill="currentColor"/></svg>
+   شروع بازی
+  </button>
+  <p class="tip">زمین همیشه زنده است؛ خوراکی جمع کن، رشد کن و از رقبا جلو بزن.<br>حرکت با کشیدن انگشت · نگه داشتن شتاب برای سرعت بیشتر</p>
+ </div>
+</div>
+
+
+<div class="screen" id="skin-screen" hidden>
+ <div class="panel skin-panel">
+  <div class="badge">✦&nbsp; گاراژ پوسته‌ها</div>
+  <h1 style="font-size:30px">ظاهر مار را انتخاب کن</h1>
+  <p class="subtitle">پوسته‌ها فقط ظاهر را تغییر می‌دهند؛ خوراکی‌های میدان همان گوی‌های رنگی هستند.</p>
   <div class="skins" id="skin-picker">
    <button class="skin-btn active" data-skin="mint" aria-label="پوسته نعنایی"><span class="skin-swatch" style="background:#55e9ad;color:#55e9ad"></span><span class="skin-name">نعنایی</span></button>
    <button class="skin-btn" data-skin="ocean" aria-label="پوسته اقیانوسی"><span class="skin-swatch" style="background:#42baff;color:#42baff"></span><span class="skin-name">اقیانوس</span></button>
@@ -117,11 +147,7 @@ h1{font-size:clamp(32px,9vw,43px);line-height:1.2;letter-spacing:-1.5px;margin:0
    <button class="skin-btn" data-skin="toxic" aria-label="پوسته سمی"><span class="skin-swatch" style="background:radial-gradient(circle,#b9ffde,#45efad 55%,#087d72);color:#45efad"></span><span class="skin-name">سمی</span></button>
    <button class="skin-btn" data-skin="lava" aria-label="پوسته گدازه"><span class="skin-swatch" style="background:linear-gradient(135deg,#ffd06a,#ff4e5e 60%,#8e183a);color:#ff4e5e"></span><span class="skin-name">گدازه</span></button>
   </div>
-  <button class="primary" id="play-btn" style="margin-top:19px">
-   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" fill="currentColor"/></svg>
-   شروع بازی
-  </button>
-  <p class="tip">با جوی‌استیک حرکت کن · برای شتاب، دکمهٔ برق را نگه دار<br>هرچه بزرگ‌تر شوی، جای بیشتری در جدول می‌گیری!</p>
+  <button class="secondary" id="back-from-skins">بازگشت به میدان</button>
  </div>
 </div>
 
