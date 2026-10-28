@@ -319,13 +319,6 @@ function makeSnake(x,y,angle,color,name,isPlayer){
  resetTrail(s,length*4+95);
  return s;
 }
-function makeSnake(x,y,angle,color,name,isPlayer){
- const length=isPlayer?14:Math.floor(random(12,26));
- const radius=isPlayer?12.2:random(9.7,12.4);
- const s={x,y,angle,targetAngle:angle,color,name,isPlayer,length,baseSpeed:isPlayer?146:random(108,145),radius,trail:[],trailDistance:0,dead:false,respawn:0,aiTimer:0,wander:random(-1,1),boost:false,boostClock:0,score:0,pattern:color.pattern||'solid',headStyle:color.head||'classic',personality:random(.75,1.28)};
- for(let i=0;i<length*4+95;i++)s.trail.push({x:x-Math.cos(angle)*i*TRAIL_STEP,y:y-Math.sin(angle)*i*TRAIL_STEP});
- return s;
-}
 function placeFood(x,y){
  if(x===undefined||y===undefined){
   const a=random(0,TAU),r=Math.sqrt(Math.random())*(WORLD_RADIUS-110);
